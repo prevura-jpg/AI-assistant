@@ -36,8 +36,8 @@ const channelHandlers = {
 
 // ====== Додатковий wrapper для безпечної обробки подій ======
 function safeHandleSlackEvent(payload) {
-    // Debug: показуємо повний об’єкт події
-    console.log('Slack event received (debug):', JSON.stringify(payload, null, 2));
+    console.log('--- Slack event received (debug) ---');
+    console.log(JSON.stringify(payload, null, 2));
 
     let event;
     if (payload.type === 'event_callback' && payload.event) {
@@ -66,30 +66,29 @@ function safeHandleSlackEvent(payload) {
     if (event.text) {
         messageText = event.text;
     } else if (event.attachments && event.attachments.length > 0) {
-        messageText = event.attachments[0].text || event.attachments[0].fallback;
+        messageText = event.attachments.map(att => att.text || att.fallback).join('\n');
     } else if (event.blocks && event.blocks.length > 0) {
         messageText = event.blocks.map(block => {
-            if (block.type === 'section' && block.text && block.text.text) {
-                return block.text.text;
-            }
+            if (block.type === 'section' && block.text && block.text.text) return block.text.text;
             return '';
         }).join(' ');
     }
 
-    // Перевірка обов’язкових полів
+    if (!messageText) {
+        console.log('No text found in event, skipping.');
+    }
+
     const { channel, ts } = event;
-    if (!messageText || !channel || !ts) {
-        console.log(`Ignoring event: Missing required fields (text, channel, or ts). Subtype: ${event.subtype}`);
+    if (!channel || !ts) {
+        console.log(`Missing required fields (channel or ts). Event subtype: ${event.subtype || 'none'}`);
         return;
     }
 
-    // Створюємо новий об'єкт події з нормалізованим полем тексту
     const normalizedEvent = {
         ...event,
         text: messageText,
     };
 
-    // Виклик обробника для каналу
     if (channelHandlers[channel]) {
         console.log(`Dispatching message to handler for channel: ${channel}`);
         channelHandlers[channel](normalizedEvent);

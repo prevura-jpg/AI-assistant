@@ -17,9 +17,10 @@ let dailyReportReceived = false;
 let processedMessages = new Set(); // щоб уникати дублювань
 
 // --- Допоміжні функції ---
-function isActToDayBfrReport(event) {
-  if (!event.text) return false;
-  return event.text.trim().toLowerCase().startsWith(ACT_TO_DAY_BFR_REPORT_NAME.toLowerCase());
+function isActToDayBfrReport(eventOrText) {
+  const text = eventOrText.text ?? eventOrText;
+  if (!text) return false;
+  return text.trim().toLowerCase().startsWith(ACT_TO_DAY_BFR_REPORT_NAME.toLowerCase());
 }
 
 function extractPercentages(text) {
@@ -67,6 +68,9 @@ async function checkManagerAlert(event) {
   // 2. Ігноруємо власного бота
   if (bot_id && bot_id === BOT_ID) return;
 
+  // 2b. Ігноруємо повідомлення, які бот вже відправив через thread_ts
+  if (text && text.includes('<@' + BOT_ID + '>')) return;
+
   // 3. Уникаємо повторної обробки
   if (processedMessages.has(ts)) return;
   processedMessages.add(ts);
@@ -104,39 +108,50 @@ async function checkManagerAlert(event) {
   }
 }
 
-// --- Щоденна перевірка ---
-function scheduleDailyCheck() {
-  const now = new Date();
-  const checkTime = new Date();
-  checkTime.setHours(DAILY_CHECK_TIME.hour, DAILY_CHECK_TIME.minute, 0, 0);
+// --- Надійна щоденна перевірка ---
+async function dailyCheck() {
+  const now = Math.floor(Date.now() / 1000);
+  const oldest = now - 5 * 60; // останні 5 хвилин
 
-  if (now > checkTime) checkTime.setDate(checkTime.getDate() + 1);
+  try {
+    const result = await slackClient.conversations.history({
+      channel: MANAGER_ALERT_CHANNEL_ID,
+      oldest: oldest.toString(),
+      inclusive: true,
+      limit: 50
+    });
 
-  const waitMs = checkTime.getTime() - now.getTime();
-  console.log(`Next daily check: ${checkTime.toLocaleString()}`);
+    // перевіряємо, чи є хоча б один звіт
+    const foundReport = result.messages.some(msg => isActToDayBfrReport(msg.text));
 
-  setTimeout(() => {
-    if (!dailyReportReceived) {
+    if (!foundReport) {
       const msg = `<@${DEV_USER_BONDARENKO_ID}> Не прийшов звіт ActToDayBfr, перевірте, будь ласка, причину. Для інформації: <@${OWNER_USER_REVURA_ID}> <@${OWNER_USER_RADCHENKO_ID}>`;
-      slackClient.chat.postMessage({
-        channel: MANAGER_ALERT_CHANNEL_ID,
-        text: msg,
-        unfurl_links: false
-      }).then(() => console.log('Daily check notification sent.'))
-        .catch(err => console.error('Error sending daily check notification:', err.message));
+      await slackClient.chat.postMessage({ channel: MANAGER_ALERT_CHANNEL_ID, text: msg, unfurl_links: false });
+      console.log('Daily check notification sent.');
     } else {
-      console.log('Report received today – no alert needed.');
+      console.log('Report received – щоденний алерт не потрібен.');
     }
+  } catch (err) {
+    console.error('Error in daily check:', err.message);
+  }
 
-    // reset
-    dailyReportReceived = false;
-    scheduleDailyCheck();
-  }, waitMs);
+  // Наступна перевірка завтра
+  scheduleNextDailyCheck();
+}
+
+function scheduleNextDailyCheck() {
+  const now = new Date();
+  const nextCheck = new Date();
+  nextCheck.setHours(DAILY_CHECK_TIME.hour, DAILY_CHECK_TIME.minute, 0, 0);
+  if (now > nextCheck) nextCheck.setDate(nextCheck.getDate() + 1);
+
+  const waitMs = nextCheck.getTime() - now.getTime();
+  setTimeout(dailyCheck, waitMs);
 }
 
 function initDailyCheck() {
   console.log('Initializing daily manager alert check...');
-  scheduleDailyCheck();
+  scheduleNextDailyCheck();
 }
 
 module.exports = {
