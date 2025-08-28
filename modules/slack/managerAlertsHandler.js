@@ -17,20 +17,28 @@ let dailyReportReceived = false;
 let processedMessages = new Set(); // щоб уникати дублювань
 
 // --- Допоміжні функції ---
+function extractNegativeDeviations(text, threshold) {
+  const lines = text.split('\n');
+  const deviations = [];
+
+  for (const line of lines) {
+    // шукаємо формат "дата, Маркет, -99.7%"
+    const match = line.match(/,\s*([^,]+),\s*(-?\d+(\.\d+)?)%/);
+    if (match) {
+      const market = match[1].trim();
+      const value = parseFloat(match[2]);
+      if (value <= threshold) {
+        deviations.push(`${market}, ${value.toFixed(1)}%`);
+      }
+    }
+  }
+  return deviations;
+}
+
 function isActToDayBfrReport(eventOrText) {
   const text = eventOrText.text ?? eventOrText;
   if (!text) return false;
   return text.trim().toLowerCase().startsWith(ACT_TO_DAY_BFR_REPORT_NAME.toLowerCase());
-}
-
-function extractPercentages(text) {
-  const regex = /(-?\d+(\.\d+)?)%/g;
-  const matches = [...text.matchAll(regex)];
-  return matches.map(m => parseFloat(m[1]));
-}
-
-function findCriticalDeviation(percentages) {
-  return percentages.find(v => v <= ALERT_THRESHOLD) ?? null;
 }
 
 async function addReaction(channel, ts, reaction) {
@@ -94,17 +102,18 @@ async function checkManagerAlert(event) {
       return;
     }
 
-    // Варіант 2: з відхиленнями
-    const percentages = extractPercentages(normalizedText);
-    const critical = findCriticalDeviation(percentages);
+    // --- Варіант 2: з відхиленнями
+const deviations = extractNegativeDeviations(normalizedText, ALERT_THRESHOLD);
 
-    if (critical !== null) {
-      const msg = `<@${OWNER_USER_REVURA_ID}> <@${OWNER_USER_RADCHENKO_ID}> Знайдено відхилення ${critical.toFixed(1)}% – перевірте, будь ласка, в чому проблема.`;
-      await addReaction(channel, ts, 'exclamation');
-      await addCommentToThread(channel, ts, msg);
-    } else if (percentages.length > 0) {
-      await addReaction(channel, ts, 'thumbsup');
-    }
+if (deviations.length > 0) {
+  const msg = `<@${OWNER_USER_REVURA_ID}> <@${OWNER_USER_RADCHENKO_ID}> Знайдено відхилення:\n` +
+            deviations.map(d => `• ${d}`).join('\n') +
+            `\nПеревірте, будь ласка, в чому проблема.`;
+  await addReaction(channel, ts, 'exclamation');
+  await addCommentToThread(channel, ts, msg);
+} else {
+  await addReaction(channel, ts, 'thumbsup');
+}
   }
 }
 
