@@ -34,7 +34,7 @@ async function handleMeetingSummary(payload) {
 }
 
 function determineMeetingType(title, transcript) {
-  const specialKeywords = ['daily', 'review', 'retrospective', 'workshop', 'planning', 'chek-in'];
+  const specialKeywords = ['daily', 'review', 'retrospective', 'workshop', 'planning', 'cheсk-in'];
   const titleLower = title.toLowerCase();
   
   if (specialKeywords.some(keyword => titleLower.includes(keyword))) {

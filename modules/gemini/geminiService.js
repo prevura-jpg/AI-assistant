@@ -68,7 +68,7 @@ async function getGeminiSummary({ title, transcript, agenda, previousSummary, ad
             `;
         }
       } else {
-        // Існуючий детальний промт для "звичайних" мітингів
+        // Оновлений детальний промт для "звичайних" мітингів
         prompt = `
 Ви — AI-асистент, який створює детальні та організовані протоколи зустрічей українською мовою.
 
@@ -88,7 +88,12 @@ async function getGeminiSummary({ title, transcript, agenda, previousSummary, ad
 
 {
   "summary": {
-    "participants": ["список учасників, якщо доступно"],
+    "participants": [
+      {
+        "name": "повне ім'я учасника",
+        "role": "роль (наприклад, менеджер, розробник), якщо її можна визначити"
+      }
+    ],
     "goal": "коротка мета зустрічі",
     "discussion": "стислий підсумок обговорення",
     "undiscussed_points": ["список пунктів, які не обговорювалися"],
