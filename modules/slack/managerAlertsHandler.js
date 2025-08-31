@@ -4,7 +4,9 @@ const slackClient = require('./slackClient');
 // --- Константи ---
 const ACT_TO_DAY_BFR_REPORT_NAME = 'ActToDayBfr';
 const ALERT_THRESHOLD = -3.0;
-const DAILY_CHECK_TIME = { hour: 13, minute: 32 };
+const CHECK_WINDOW_START = { hour: 13, minute: 25 };
+const CHECK_WINDOW_END = { hour: 13, minute: 35 };
+const CHECK_INTERVAL_MS = 60 * 1000; // 1 хвилина
 
 const DEV_USER_BONDARENKO_ID = process.env.SLACK_DEV_USER_BONDARENKO_ID;
 const OWNER_USER_REVURA_ID = process.env.SLACK_OWNER_USER_REVURA_ID;
@@ -117,45 +119,62 @@ if (deviations.length > 0) {
   }
 }
 
-// --- Надійна щоденна перевірка ---
-async function dailyCheck() {
-  const now = Math.floor(Date.now() / 1000);
-  const oldest = now - 5 * 60; // останні 5 хвилин
+// --- Перевірка в проміжку 13:25–13:35 ---
+async function dailyCheckWindow() {
+  dailyReportReceived = false;
+  const start = new Date();
+  start.setHours(CHECK_WINDOW_START.hour, CHECK_WINDOW_START.minute, 0, 0);
+  const end = new Date();
+  end.setHours(CHECK_WINDOW_END.hour, CHECK_WINDOW_END.minute, 0, 0);
 
-  try {
-    const result = await slackClient.conversations.history({
-      channel: MANAGER_ALERT_CHANNEL_ID,
-      oldest: oldest.toString(),
-      inclusive: true,
-      limit: 50
-    });
+  const intervalId = setInterval(async () => {
+    const now = new Date();
+    if (now > end || dailyReportReceived) {
+      clearInterval(intervalId);
 
-    // перевіряємо, чи є хоча б один звіт
-    const foundReport = result.messages.some(msg => isActToDayBfrReport(msg.text));
-
-    if (!foundReport) {
-      const msg = `<@${DEV_USER_BONDARENKO_ID}> Не прийшов звіт ActToDayBfr, перевірте, будь ласка, причину. Для інформації: <@${OWNER_USER_REVURA_ID}> <@${OWNER_USER_RADCHENKO_ID}>`;
-      await slackClient.chat.postMessage({ channel: MANAGER_ALERT_CHANNEL_ID, text: msg, unfurl_links: false });
-      console.log('Daily check notification sent.');
-    } else {
-      console.log('Report received – щоденний алерт не потрібен.');
+      if (!dailyReportReceived) {
+        const msg = `<@${DEV_USER_BONDARENKO_ID}> Не прийшов звіт ActToDayBfr (13:30 ±5 хв), перевірте, будь ласка, причину. Для інформації: <@${OWNER_USER_REVURA_ID}> <@${OWNER_USER_RADCHENKO_ID}>`;
+        await slackClient.chat.postMessage({ channel: MANAGER_ALERT_CHANNEL_ID, text: msg, unfurl_links: false });
+        console.log('Daily check notification sent.');
+      } else {
+        console.log('Report received – щоденний алерт не потрібен.');
+      }
+      return;
     }
-  } catch (err) {
-    console.error('Error in daily check:', err.message);
-  }
 
-  // Наступна перевірка завтра
-  scheduleNextDailyCheck();
+    try {
+      const oldest = Math.floor(start.getTime() / 1000);
+      const latest = Math.floor(now.getTime() / 1000);
+
+      const result = await slackClient.conversations.history({
+        channel: MANAGER_ALERT_CHANNEL_ID,
+        oldest: oldest.toString(),
+        latest: latest.toString(),
+        inclusive: true,
+        limit: 50
+      });
+
+      if (result.messages.some(msg => isActToDayBfrReport(msg.text))) {
+        dailyReportReceived = true;
+      }
+    } catch (err) {
+      console.error('Error checking report:', err.message);
+    }
+  }, CHECK_INTERVAL_MS);
 }
 
+// --- Автозапуск щодня ---
 function scheduleNextDailyCheck() {
   const now = new Date();
   const nextCheck = new Date();
-  nextCheck.setHours(DAILY_CHECK_TIME.hour, DAILY_CHECK_TIME.minute, 0, 0);
+  nextCheck.setHours(CHECK_WINDOW_START.hour, CHECK_WINDOW_START.minute, 0, 0);
   if (now > nextCheck) nextCheck.setDate(nextCheck.getDate() + 1);
 
   const waitMs = nextCheck.getTime() - now.getTime();
-  setTimeout(dailyCheck, waitMs);
+  setTimeout(() => {
+    dailyCheckWindow();
+    scheduleNextDailyCheck(); // плануємо на наступний день
+  }, waitMs);
 }
 
 function initDailyCheck() {
