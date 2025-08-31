@@ -1,13 +1,16 @@
 const slackClient = require('./slackClient');
 
 // Константи для налаштувань
-const SUMMARY_CHECK_TIME_HOUR = 10;
-const SUMMARY_CHECK_TIME_MINUTE_END = 3;
+const SUMMARY_CHECK_START_HOUR = 9;
+const SUMMARY_CHECK_START_MINUTE = 58;
+const SUMMARY_CHECK_END_HOUR = 10;
+const SUMMARY_CHECK_END_MINUTE = 4;
 
 // Час, коли має спрацювати перевірка на наявність звітів
-const SHOP_BUSINESS_CHECK_TIME_HOUR = 10;
-// Ми перевіряємо після 10:05, тому ставимо 10:06, щоб бути впевненими, що період минув
-const SHOP_BUSINESS_CHECK_MINUTE = 6; 
+const SHOP_BUSINESS_CHECK_START_HOUR = 9;
+const SHOP_BUSINESS_CHECK_START_MINUTE = 58;
+const SHOP_BUSINESS_CHECK_END_HOUR = 10;
+const SHOP_BUSINESS_CHECK_END_MINUTE = 6; 
 
 const TROUBLE_PERCENTAGE_THRESHOLD = 7; // Поріг для TrPerc
 
@@ -200,14 +203,13 @@ function sendMissingReportNotification(reportType, channel) {
 function initDailyHarixxCheck() {
   console.log('Initializing daily Harixx report check...');
   
-  // Запускаємо перевірку кожну хвилину
   setInterval(() => {
     const now = new Date();
     const currentHour = now.getHours();
     const currentMinute = now.getMinutes();
     const today = now.toDateString();
     
-    // Перевіряємо, чи настав новий день. Якщо так, скидаємо всі прапорці.
+    // Скидаємо прапорці щодня
     if (lastCheckDate !== today) {
       summaryReportReceived = false;
       shopReportReceived = false;
@@ -217,52 +219,66 @@ function initDailyHarixxCheck() {
       lastCheckDate = today;
       console.log(`New day started. Resetting all report flags for ${today}`);
     }
-    
-   // Summary Report: 10:00–10:03 ±1 хв => 0–4
-    if (!summaryCheckCompleted &&
-      currentHour === SUMMARY_CHECK_TIME_HOUR &&
-      currentMinute >= 0 && currentMinute <= 4) {
-    
-    console.log('Summary Report check time reached...');
-    
-    if (!summaryReportReceived) {
-      console.log('Summary Report not received, sending notification');
-      sendMissingReportNotification('Summary report', process.env.SLACK_HARIXX_REPORT_CHANNEL_ID);
-    } else {
-      console.log('Summary Report already received today');
+
+    // -------- Summary Report --------
+    if (!summaryCheckCompleted) {
+      const inSummaryWindow =
+        (currentHour === SUMMARY_CHECK_START_HOUR && currentMinute >= SUMMARY_CHECK_START_MINUTE) ||
+        (currentHour === SUMMARY_CHECK_END_HOUR && currentMinute <= SUMMARY_CHECK_END_MINUTE);
+
+      if (inSummaryWindow) {
+        if (currentHour === SUMMARY_CHECK_END_HOUR && currentMinute === SUMMARY_CHECK_END_MINUTE) {
+          console.log('Summary Report check window ended...');
+          if (!summaryReportReceived) {
+            console.log('Summary Report not received, sending notification');
+            sendMissingReportNotification('Summary report', process.env.SLACK_HARIXX_REPORT_CHANNEL_ID);
+          } else {
+            console.log('Summary Report received on time');
+          }
+          summaryCheckCompleted = true;
+        } else {
+          console.log(`Waiting for Summary Report... (${currentHour}:${currentMinute})`);
+        }
+      }
+    }
+
+    // -------- Shop & Business Reports --------
+    if (!shopBusinessCheckCompleted) {
+      const inShopBusinessWindow =
+        (currentHour === SHOP_BUSINESS_CHECK_START_HOUR && currentMinute >= SHOP_BUSINESS_CHECK_START_MINUTE) ||
+        (currentHour === SHOP_BUSINESS_CHECK_END_HOUR && currentMinute <= SHOP_BUSINESS_CHECK_END_MINUTE);
+
+      if (inShopBusinessWindow) {
+        if (currentHour === SHOP_BUSINESS_CHECK_END_HOUR && currentMinute === SHOP_BUSINESS_CHECK_END_MINUTE) {
+          console.log('Shop & Business Reports check window ended...');
+          
+          if (!shopReportReceived) {
+            console.log('Report by Shop not received, sending notification');
+            sendMissingReportNotification('Report by shop', process.env.SLACK_HARIXX_REPORT_CHANNEL_ID);
+          } else {
+            console.log('Report by Shop received on time');
+          }
+
+          if (!businessReportReceived) {
+            console.log('Report by Business not received, sending notification');
+            sendMissingReportNotification('Report by Business', process.env.SLACK_HARIXX_REPORT_CHANNEL_ID);
+          } else {
+            console.log('Report by Business received on time');
+          }
+
+          shopBusinessCheckCompleted = true;
+        } else {
+          console.log(`Waiting for Shop/Business Reports... (${currentHour}:${currentMinute})`);
+        }
+      }
     }
     
-    summaryCheckCompleted = true;
-  }
-  
-  // Shop та Business Reports: 10:00–10:05 ±1 хв => 0–6
-  if (!shopBusinessCheckCompleted &&
-      currentHour === SHOP_BUSINESS_CHECK_TIME_HOUR &&
-      currentMinute >= 0 && currentMinute <= 6) {
-    
-    console.log('Shop and Business Report check time reached...');
-    
-    if (!shopReportReceived) {
-      console.log('Report by Shop not received, sending notification');
-      sendMissingReportNotification('Report by shop', process.env.SLACK_HARIXX_REPORT_CHANNEL_ID);
-    } else {
-      console.log('Report by Shop already received today');
-    }
-    
-    if (!businessReportReceived) {
-      console.log('Report by Business not received, sending notification');
-      sendMissingReportNotification('Report by Business', process.env.SLACK_HARIXX_REPORT_CHANNEL_ID);
-    } else {
-      console.log('Report by Business already received today');
-    }
-    
-    shopBusinessCheckCompleted = true;
-  }
-  
-}, 60000); // Перевірка кожну хвилину
+  }, 60000); // Перевірка кожну хвилину
 }
 
 module.exports = { checkHarixxReport, initDailyHarixxCheck };
+
+
 
 
 
