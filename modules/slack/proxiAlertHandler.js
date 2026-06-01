@@ -96,7 +96,7 @@ function checkProxiAlert(event) {
     console.log('Failed Proxies Alert detected, sending notification and adding reaction.');
  
     // Створюємо повідомлення з усіма тегами в одному коментарі
-    const alertMessage = `<@${process.env.SLACK_DEV_USER_NESEN_ID}> Проблема з проксі, перегляньте, будь ласка, чи все коректно. Для інформації: <@${process.env.SLACK_OWNER_USER_RADCHENKO_ID}> <@${process.env.SLACK_OWNER_USER_REVURA_ID}>`;
+    const alertMessage = `<@${process.env.SLACK_DEV_USER_NESEN_ID}> Проблема з проксі, перегляньте, будь ласка, чи все коректно. Для інформації: <@${process.env.SLACK_OWNER_USER_GORYAINOV_ID}> <@${process.env.SLACK_OWNER_USER_SAVA_ID}>`;
  
     // Додаємо коментар у тред
     addCommentToThread(channel, ts, alertMessage);

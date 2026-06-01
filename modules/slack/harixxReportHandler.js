@@ -156,7 +156,7 @@ function checkHarixxReport(event) {
         console.log('TrPerc is above threshold, escalating alert');
         
         // Тегуємо користувачів у треді
-        const alertMessage = `<@${process.env.SLACK_OWNER_USER_RADCHENKO_ID}> Візьміть, будь ласка, в роботу - прийшло відхилееня >7%. Для інформації: <@${process.env.SLACK_OWNER_USER_REVURA_ID}>`;
+        const alertMessage = `<@${process.env.SLACK_OWNER_USER_SAVA_ID}> Візьміть, будь ласка, в роботу - прийшло відхилееня >7%.`;
         
         addCommentToThread(channel, ts, alertMessage);
         addReaction(channel, ts, 'exclamation');
@@ -184,7 +184,7 @@ function checkHarixxReport(event) {
  * @param {string} channel - ID каналу
  */
 function sendMissingReportNotification(reportType, channel) {
-  let message = `<@${process.env.SLACK_DEV_USER_BONDARENKO_ID}> Не прийшов звіт ${reportType}, перевірте, будь ласка, в чому причина. Для інформації: <@${process.env.SLACK_OWNER_USER_REVURA_ID}> <@${process.env.SLACK_OWNER_USER_RADCHENKO_ID}>`;
+  let message = `<@${process.env.SLACK_DEV_USER_BONDARENKO_ID}> Не прийшов звіт ${reportType}, перевірте, будь ласка, в чому причина. Для інформації: <@${process.env.SLACK_OWNER_USER_SAVA_ID}>`;
   
   slackClient.chat.postMessage({
     channel: channel,

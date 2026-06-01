@@ -73,7 +73,7 @@ function handleCriticalAlert(channel, ts) {
   addReaction(channel, ts, 'exclamation');
   addCommentToThread(channel, ts, 
     `<@${process.env.SLACK_DEV_USER_VITRYK_ID}> Критичний алерт! Перевірте, будь ласка, негайно. ` +
-    `<@${process.env.SLACK_OWNER_USER_REVURA_ID}> для інформації.`
+    `<@${process.env.SLACK_OWNER_USER_SAVA_ID}> для інформації.`
   );
 }
 
@@ -84,7 +84,7 @@ function handleOldParserAlert(channel, ts) {
   addReaction(channel, ts, 'exclamation');
   addCommentToThread(channel, ts,
     `<@${process.env.SLACK_DEV_USER_VITRYK_ID}> Старий парсер знайшов нові замовлення, яких нема в нотифікаціях. Перевірте, будь ласка. ` +
-    `<@${process.env.SLACK_OWNER_USER_REVURA_ID}> для інформації.`
+    `<@${process.env.SLACK_OWNER_USER_SAVA_ID}> для інформації.`
   );
 }
 
@@ -107,7 +107,7 @@ function handleRepeatingAlert(normalizedText, channel, ts) {
   if (timeSinceLastSeen <= ALERT_REPEAT_SECONDS && !state.escalated && timeSinceLastEscalation >= ALERT_ESCALATION_COOLDOWN_SECONDS) {
     addCommentToThread(channel, ts,
       `<@${process.env.SLACK_DEV_USER_VITRYK_ID}> Повторюваний алерт кожні 10с — перевірте, будь ласка, чи все ок. ` +
-      `<@${process.env.SLACK_OWNER_USER_REVURA_ID}> для інформації.`
+      `<@${process.env.SLACK_OWNER_USER_SAVA_ID}> для інформації.`
     );
     state.escalated = true;
     state.lastEscalation = now;

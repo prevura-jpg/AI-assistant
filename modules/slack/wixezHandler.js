@@ -64,7 +64,7 @@ function handleWixezAlert(event) {
     // Надсилаємо повідомлення власнику як відповідь в тред (потік)
     slackClient.chat.postMessage({
       channel: channel,
-      text: `<@${process.env.SLACK_OWNER_USER_REVURA_ID}> Видалена формула на Безкосі, перевірте, будь ласка, чи все коректно.`,
+      text: `<@${process.env.SLACK_OWNER_USER_SAVA_ID}> Видалена формула на Безкосі, перевірте, будь ласка, чи все коректно.`,
       unfurl_links: false,
       thread_ts: ts // Цей параметр відправляє повідомлення як відповідь на оригінал
     }).then(() => {

@@ -79,7 +79,7 @@ function initReportChecker(slackClient) {
             console.log('❌ No warehouse report found by 12:30, notifying owner...');
             return slackClient.chat.postMessage({
               channel: process.env.SLACK_WAREHOUSE_ALERT_CHANNEL_ID,
-              text: `<@${process.env.SLACK_OWNER_USER_REVURA_ID}> Звіт Warehouse Statistics не прийшов до 12:30, перевірте, будь ласка, причину.`,
+              text: `<@${process.env.SLACK_OWNER_USER_SAVA_ID}> Звіт Warehouse Statistics не прийшов до 12:30, перевірте, будь ласка, причину.`,
               unfurl_links: false
             });
           } else {

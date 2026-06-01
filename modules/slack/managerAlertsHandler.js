@@ -9,8 +9,8 @@ const CHECK_WINDOW_END = { hour: 13, minute: 35 };
 const CHECK_INTERVAL_MS = 60 * 1000; // 1 хвилина
 
 const DEV_USER_BONDARENKO_ID = process.env.SLACK_DEV_USER_BONDARENKO_ID;
-const OWNER_USER_REVURA_ID = process.env.SLACK_OWNER_USER_REVURA_ID;
-const OWNER_USER_RADCHENKO_ID = process.env.SLACK_OWNER_USER_RADCHENKO_ID;
+const OWNER_USER_SAVA_ID = process.env.SLACK_OWNER_USER_SAVA_ID;
+const OWNER_USER_GORYAINOV_ID = process.env.SLACK_OWNER_USER_GORYAINOV_ID;
 const MANAGER_ALERT_CHANNEL_ID = process.env.SLACK_MANAGER_ALERT_CHANNEL_ID;
 const BOT_ID = process.env.SLACK_BOT_ID;
 
@@ -98,7 +98,7 @@ async function checkManagerAlert(event) {
 
     // Варіант 3: пустий звіт
     if (normalizedText.toLowerCase() === ACT_TO_DAY_BFR_REPORT_NAME.toLowerCase()) {
-      const msg = `<@${OWNER_USER_REVURA_ID}> <@${OWNER_USER_RADCHENKO_ID}> Звіт прийшов пустий, перевірте, будь ласка, в чому причина.`;
+      const msg = `<@${OWNER_USER_SAVA_ID}> Звіт прийшов пустий, перевірте, будь ласка, в чому причина.`;
       await addReaction(channel, ts, 'exclamation');
       await addCommentToThread(channel, ts, msg);
       return;
@@ -108,7 +108,7 @@ async function checkManagerAlert(event) {
 const deviations = extractNegativeDeviations(normalizedText, ALERT_THRESHOLD);
 
 if (deviations.length > 0) {
-  const msg = `<@${OWNER_USER_REVURA_ID}> <@${OWNER_USER_RADCHENKO_ID}> Знайдено відхилення:\n` +
+  const msg = `<@${OWNER_USER_SAVA_ID}> <@${OWNER_USER_GORYAINOV_ID}> Знайдено відхилення:\n` +
             deviations.map(d => `• ${d}`).join('\n') +
             `\nПеревірте, будь ласка, в чому проблема.`;
   await addReaction(channel, ts, 'exclamation');
@@ -133,7 +133,7 @@ async function dailyCheckWindow() {
       clearInterval(intervalId);
 
       if (!dailyReportReceived) {
-        const msg = `<@${DEV_USER_BONDARENKO_ID}> Не прийшов звіт ActToDayBfr (13:30 ±5 хв), перевірте, будь ласка, причину. Для інформації: <@${OWNER_USER_REVURA_ID}> <@${OWNER_USER_RADCHENKO_ID}>`;
+        const msg = `<@${DEV_USER_BONDARENKO_ID}> Не прийшов звіт ActToDayBfr (13:30 ±5 хв), перевірте, будь ласка, причину. Для інформації: <@${OWNER_USER_SAVA_ID}>`;
         await slackClient.chat.postMessage({ channel: MANAGER_ALERT_CHANNEL_ID, text: msg, unfurl_links: false });
         console.log('Daily check notification sent.');
       } else {
