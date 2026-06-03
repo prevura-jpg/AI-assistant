@@ -98,7 +98,7 @@ async function checkManagerAlert(event) {
 
     // Варіант 3: пустий звіт
     if (normalizedText.toLowerCase() === ACT_TO_DAY_BFR_REPORT_NAME.toLowerCase()) {
-      const msg = `<@${OWNER_USER_SAVA_ID}> Звіт прийшов пустий, перевірте, будь ласка, в чому причина.`;
+      const msg = `<@${OWNER_USER_SAVA_ID}> <@${OWNER_USER_GORYAINOV_ID}> Звіт прийшов пустий, перевірте, будь ласка, в чому причина.`;
       await addReaction(channel, ts, 'exclamation');
       await addCommentToThread(channel, ts, msg);
       return;
@@ -133,7 +133,7 @@ async function dailyCheckWindow() {
       clearInterval(intervalId);
 
       if (!dailyReportReceived) {
-        const msg = `<@${DEV_USER_BONDARENKO_ID}> Не прийшов звіт ActToDayBfr (13:30 ±5 хв), перевірте, будь ласка, причину. Для інформації: <@${OWNER_USER_SAVA_ID}>`;
+        const msg = `<@${DEV_USER_BONDARENKO_ID}> Не прийшов звіт ActToDayBfr (13:30 ±5 хв), перевірте, будь ласка, причину. Для інформації: <@${OWNER_USER_SAVA_ID}> <@${OWNER_USER_GORYAINOV_ID}>`;
         await slackClient.chat.postMessage({ channel: MANAGER_ALERT_CHANNEL_ID, text: msg, unfurl_links: false });
         console.log('Daily check notification sent.');
       } else {
